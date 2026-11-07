@@ -24,7 +24,7 @@ export default function LoginPage() {
   const tabs = [['masuk', 'Masuk'], ['daftar', 'Daftar'], ['magic', 'Magic Link']] as const;
   return (
     <main className="grid min-h-screen place-items-center p-4">
-      <div className="glass w-full max-w-md p-8">
+      <div className="glass w-full max-w-md p-6 sm:p-8">
         <h1 className="text-2xl font-bold">LMS Vibe Coding</h1>
         <p className="mt-1 text-sm text-slate-400">Belajar membuat aplikasi bisnis sendiri, tanpa ribet.</p>
         <div className="mt-6 grid grid-cols-3 gap-1 rounded-lg bg-ink/70 p-1" role="tablist">
