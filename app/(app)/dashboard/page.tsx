@@ -12,19 +12,21 @@ const Bar = ({ v }: { v: number }) => (<div className="h-2 rounded bg-white/10">
 export default async function Dashboard() {
   const { sb, user, profile } = await getProfile();
   const isAdmin = profile.role === 'admin';
-  const { data: mine } = await sb.from('enrollments').select('id,status,progress_percent,courses(title,slug,thumbnail_url,intro_youtube_url)').eq('user_id', user.id).order('created_at', { ascending: false });
+  const mineQ = sb.from('enrollments').select('id,status,progress_percent,courses(title,slug,thumbnail_url,intro_youtube_url)').eq('user_id', user.id).order('created_at', { ascending: false });
+  const adminQ = isAdmin ? Promise.all([
+    sb.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student'),
+    sb.from('courses').select('*', { count: 'exact', head: true }),
+    sb.from('lessons').select('*', { count: 'exact', head: true }),
+    sb.from('enrollments').select('id,status,progress_percent,created_at,profiles(full_name,email),courses(title,price)').order('created_at', { ascending: false }).limit(300),
+  ]) : null;
+  const [{ data: mine }, adminRes] = await Promise.all([mineQ, adminQ]);
   const my: any[] = mine ?? [];
   const cont = my.find((m) => m.status !== 'completed') ?? my[0];
   const first = (profile.full_name || 'Pelajar').split(' ')[0];
 
   let admin: any = null;
-  if (isAdmin) {
-    const [s, c, l, e] = await Promise.all([
-      sb.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'student'),
-      sb.from('courses').select('*', { count: 'exact', head: true }),
-      sb.from('lessons').select('*', { count: 'exact', head: true }),
-      sb.from('enrollments').select('id,status,progress_percent,created_at,profiles(full_name,email),courses(title,price)').order('created_at', { ascending: false }).limit(300),
-    ]);
+  if (adminRes) {
+    const [s, c, l, e] = adminRes;
     const enr: any[] = e.data ?? [];
     const months = Array.from({ length: 6 }, (_, i) => { const d = new Date(); d.setMonth(d.getMonth() - (5 - i)); return d; });
     const key = (d: Date) => `${d.getFullYear()}-${d.getMonth()}`;

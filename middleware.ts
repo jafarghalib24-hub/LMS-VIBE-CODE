@@ -13,8 +13,12 @@ export async function middleware(req: NextRequest) {
       },
     },
   });
-  // getUser() memvalidasi token ke server Supabase (bukan hanya baca cookie) -> anti-bypass
-  const { data: { user } } = await supabase.auth.getUser();
+  // Token diverifikasi (tanda tangan) dan disegarkan bila perlu. getClaims = cepat; getUser = cadangan.
+  const auth: any = supabase.auth;
+  let uid: string | null = null;
+  if (typeof auth.getClaims === 'function') { const { data } = await auth.getClaims(); uid = data?.claims?.sub ?? null; }
+  else { const { data: { user: u } } = await supabase.auth.getUser(); uid = u?.id ?? null; }
+  const user = uid ? { id: uid } : null;
   const path = req.nextUrl.pathname;
   const isPublic = path.startsWith('/login') || path.startsWith('/auth');
   const go = (to: string) => NextResponse.redirect(new URL(to, req.url));

@@ -11,16 +11,16 @@ export default async function Player({ params, searchParams }: { params: { slug:
   const { sb, user } = await getProfile();
   const { data: course } = await sb.from('courses').select('*, modules(*, lessons(*))').eq('slug', params.slug).maybeSingle();
   if (!course) notFound();
-  const { data: enr } = await sb.from('enrollments').select('progress_percent').eq('user_id', user.id).eq('course_id', course.id).maybeSingle();
-  if (!enr) redirect('/courses');
   const modules = [...course.modules].sort((a: any, b: any) => a.order_index - b.order_index).map((m: any) => ({ ...m, lessons: [...m.lessons].sort((a: any, b: any) => a.order_index - b.order_index) }));
   const all = modules.flatMap((m: any) => m.lessons);
   const current = all.find((x: any) => x.id === searchParams.lesson) ?? all[0];
   const next = current ? all[all.findIndex((x: any) => x.id === current.id) + 1] : null;
-  const [{ data: done }, { data: tools }] = await Promise.all([
+  const [{ data: enr }, { data: done }, { data: tools }] = await Promise.all([
+    sb.from('enrollments').select('progress_percent').eq('user_id', user.id).eq('course_id', course.id).maybeSingle(),
     sb.from('lesson_progress').select('lesson_id').eq('user_id', user.id),
     sb.from('tool_links').select('*').eq('course_id', course.id).order('order_index'),
   ]);
+  if (!enr) redirect('/courses');
   const doneSet = new Set((done ?? []).map((d: any) => d.lesson_id));
   const docUrl = docEmbedUrl(current?.doc_url);
   const tabs: string[][] = [['materi', 'Materi']];
